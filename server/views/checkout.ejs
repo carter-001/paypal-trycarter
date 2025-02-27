@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PayPal Checkout</title>
+    <script src="https://www.paypal.com/sdk/js?components=buttons,hosted-fields&client-id=<%= clientId %>"></script>
+    <script src="https://www.paypal.com/sdk/js?client-id=AZw5cde_XtsTFOHhR4reqAJkMxOuZi6dMeEqY4E14zVw-Pnh0hXABXpC7apYryNPg6B0ega7ppGC_uYQ&components=buttons,hosted-fields&enable-funding=card"></script>
+</head>
+<body>
+    <h2>Pay with PayPal</h2>
+    <p>Product: <strong>Red Sox Hat</strong></p>
+    <p>Price: <strong>$0.5</strong></p>
+    
+    <div id="paypal-button-container"></div>
+
+    <script>
+        paypal.Buttons({
+            createOrder: async () => {
+                const cart = {
+                    name: "Red Sox Hat",
+                    price: "0.5",  // ✅ Ensure it's a string
+                    currency: "USD",
+                    quantity: 1,
+                    };
+
+                const response = await fetch("/api/orders", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ cart}) // Pass product data
+                });
+
+                const order = await response.json();
+                console.log("order created:", order)
+
+                if (!order.id) {
+                    throw new Error("Order creation failed");
+                    }
+                return order.id;
+            },
+            onApprove: async (data) => {
+                const response = await fetch(`/api/orders/${data.orderID}/capture`, { method: "POST" });
+                const details = await response.json();
+                console.log("Payment capture response:", details);
+
+                if (details.status === "COMPLETED") {
+                    alert("Payment successful! Your balance should now reflect the payment.");
+                } else {
+                    alert("Payment failed or pending approval.");
+                }
+                alert("Payment successful!");
+            }
+        }).render("#paypal-button-container");
+    </script>
+</body>
+</html>
